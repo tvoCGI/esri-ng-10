@@ -1,0 +1,5 @@
+/* You can add global styles to this file, and also import other style files */
+
+.esri-view .esri-view-surface--inset-outline::after {
+    outline: none !important;
+}
