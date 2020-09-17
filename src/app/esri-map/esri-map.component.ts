@@ -37,10 +37,14 @@ export class EsriMapComponent implements OnInit, OnDestroy, OnChanges {
   private _basemap = "streets";
   private _loaded = false;
   private _view: esri.MapView = null;
-  public qtLayer;
+  public streetVector: any; 
+  public fuelStationLayer: any;
+  public esriSampleURL: any; 
+  public ppdrGraphicPT = [];
+  public graphicPointFeature: any; 
   public cfLayer;
   public sfLayer;
-  public quakePT = {
+  public pointHeat = {
     type: "heatmap",
     blurRadius: 5,
     colorStops: [
@@ -48,18 +52,27 @@ export class EsriMapComponent implements OnInit, OnDestroy, OnChanges {
       { color: "#472b77", ratio: 0.083 },
       { color: "#4e2d87", ratio: 0.166 },
       { color: "#563098", ratio: 0.249 },
-      { color: "#5d32a8", ratio: 0.332 },
       { color: "#6735be", ratio: 0.415 },
-      { color: "#7139d4", ratio: 0.498 },
-      { color: "#7b3ce9", ratio: 0.581 },
       { color: "#853fff", ratio: 0.664 },
-      { color: "#a46fbf", ratio: 0.747 },
       { color: "#c29f80", ratio: 0.83 },
       { color: "#ffff00", ratio: 0.913 },
       { color: "#fab300", ratio: 1 } 
     ],
-        maxPixelIntensity: 55,
+        maxPixelIntensity: 75,
         minPixelIntensity: 0
+  };
+  public simpleMarkerSymbol = {
+    type: "simple",
+    symbol:{
+      type: "simple-marker",
+      style: "circle",
+      color: [108, 99, 43],
+      size: 9, 
+      outline: {
+        color: [255, 255, 255],
+        width: 0.8
+      }
+    } 
   };
 
   @Input() layerType: string;
@@ -99,25 +112,21 @@ export class EsriMapComponent implements OnInit, OnDestroy, OnChanges {
   async initializeMap() {
     try {
       // Load the modules for the ArcGIS API for JavaScript
-      const [EsriMap, EsriMapView, FeatureLayer, VectorTileLayer, Basemap] = await loadModules([
+      const [EsriMap, EsriMapView, FeatureLayer, VectorTileLayer, Basemap, Graphic] = await loadModules([
         "esri/Map",
         "esri/views/MapView",
         'esri/layers/FeatureLayer',
         'esri/layers/VectorTileLayer',
-        'esri/Basemap'
+        'esri/Basemap',
+        'esri/Graphic'
       ]);
-      let topoVector = new VectorTileLayer({
+       this.streetVector = new VectorTileLayer({
         portalItem: {
-          id: "8a2cba3b0ebf4140b7c0dc5ee149549a" 
+          id: "63c47b7177f946b49902c24129b87252" 
         }
       });
-      // let basemap = new Basemap({
-      //   portalItem: {
-      //     id: "8a2cba3b0ebf4140b7c0dc5ee149549a"  // WGS84 Streets Vector webmap
-      //   }
-      // });
-      let bMap = Basemap.fromId("gray-vector")
-      var basemap = new Basemap({
+
+      let basemap = new Basemap({
         baseLayers: [
           new VectorTileLayer({
             //url: "https://basemaps.arcgis.com/arcgis/rest/services/World_Basemap_v2/VectorTileServer",
@@ -130,20 +139,23 @@ export class EsriMapComponent implements OnInit, OnDestroy, OnChanges {
         title: "basemap",
         id: "basemap"
       });
-      this.qtLayer = new FeatureLayer({
-        url: "http://sampleserver6.arcgisonline.com/arcgis/rest/services/Earthquakes_Since1970/MapServer/0",
+      this.fuelStationLayer = new FeatureLayer({
+        url: "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/ArcGIS/rest/services/Alternative_Fuel_Stations/FeatureServer/0",
         outFields: ["*"],
-        //renderer: this.quakePT
+        renderer: this.simpleMarkerSymbol
+      })
+      this.esriSampleURL = new FeatureLayer({
+        url: "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/ArcGIS/rest/services/BreweriesCA/FeatureServer/0",
+        outFields: ["*"],
+        renderer: this.simpleMarkerSymbol
       })
       this.cfLayer = new FeatureLayer({
         url: "http://sampleserver6.arcgisonline.com/arcgis/rest/services/Census/MapServer/2",
         outFields: ["*"],
-        //renderer: this.quakePT
       })
       this.sfLayer = new FeatureLayer({
         url: "http://sampleserver6.arcgisonline.com/arcgis/rest/services/Census/MapServer/3",
         outFields: ["*"],
-        //renderer: this.quakePT
       })
       // Configure the Map
       const mapProperties: esri.MapProperties = {
@@ -159,9 +171,63 @@ export class EsriMapComponent implements OnInit, OnDestroy, OnChanges {
         zoom: this._zoom,
         map: map
       };
-
       this._view = new EsriMapView(mapViewProperties);
-      this._view.map.add(this.qtLayer);
+      const LocaData = [{"rowID": 1,"name":"AA","lat":"33.2011667","long":"-116.7396667"},
+				{"rowID": 2,"name":"BA","lat":"33.1711667","long":"-116.4185"},
+				{"rowID": 3,"name":"CA","lat":"33.1863333","long":"-115.6725"},
+				{"rowID": 4,"name":"ZZ","lat":"33.183","long":"-115.6006667"},
+				{"rowID": 5,"name":"ZA","lat":"33.181","long":"-115.603"},
+				{"rowID": 6,"name":"VA","lat":"33.1785","long":"-115.6071667"},
+				{"rowID": 7,"name":"VC","lat":"33.1948333","long":"-116.7335"},
+				{"rowID": 8,"name":"VB","lat":"33.1948333","long":"-116.728"},
+				{"rowID": 9,"name":"EE","lat":"33.2196667","long":"-116.735"},
+				{"rowID": 10,"name":"DC","lat":"33.2215","long":"-116.076"},
+				{"rowID": 11,"name":"DA","lat":"33.1775","long":"-115.6072667"},
+				{"rowID": 12,"name":"DD","lat":"33.1988333","long":"-116.7345"},
+				{"rowID": 13,"name":"BC","lat":"33.1848333","long":"-116.727"},
+				{"rowID": 14,"name":"BB","lat":"33.2146667","long":"-116.739"},
+				{"rowID": 15,"name":"AZ","lat":"33.2225","long":"-116.075"},
+				{"rowID": 16,"name":"AB","lat":"33.1723333","long":"-116.1118333"}];
+      for(let i = 0; i< LocaData.length; i++){
+        const point = {
+          type: "point",
+          longitude: LocaData[i].long,
+          latitude: LocaData[i].lat
+        };
+        const attributes = {
+          row_ID: LocaData[i].rowID,
+          place_name: LocaData[i].name
+        }
+        const pointGraphic = new Graphic({
+          geometry: point,
+          symbol: this.simpleMarkerSymbol.symbol,
+          attributes: attributes
+        });
+        //graphicsLayer.add(pointGraphic);
+        this.ppdrGraphicPT.push(pointGraphic);
+      }
+      
+      this.graphicPointFeature = new FeatureLayer({
+        fields: [
+        {
+          name: "id", 
+          alias: "id",
+          type: "oid"
+        },
+        {
+          name: "row_ID" ,
+          type: "long"
+        },
+        {
+          name: "place_name" ,
+          type: "string"
+        }],
+        objectIdField: "id",
+        geometryType: "point",
+        spatialReference: { wkid: 4326 },
+        source: this.ppdrGraphicPT,
+        renderer: this.simpleMarkerSymbol
+      });
       await this._view.when();
       return this._view;
     } catch (error) {
@@ -170,9 +236,23 @@ export class EsriMapComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnInit() {
-    console.log("L-Type ",this.layerType);
     // Initialize MapView and return an instance of MapView
     this.initializeMap().then(mapView => {
+      this._view.map.add(this.fuelStationLayer);
+      // this._view.watch("scale", newValue => {
+      //   this.fuelStationLayer.renderer = newValue <= 100000 ? this.simpleMarkerSymbol : this.pointHeat;
+      // })
+      this._view.on('click', event => {
+        this._view.hitTest(event).then(response => {
+          if (response.results.length) {
+            console.log("Result: ",response);
+            const graphic = response.results.filter(result => {
+              return result.graphic.layer === this.fuelStationLayer;
+            })[0].graphic;
+            console.log("Name: " + graphic.attributes.Station_Name);
+          }
+        });
+      });
       // The map has been initialized
       console.log("mapView ready: ", this._view.ready);
       this._loaded = this._view.ready;
@@ -193,16 +273,31 @@ export class EsriMapComponent implements OnInit, OnDestroy, OnChanges {
       this._view.map.basemap.baseLayers.forEach((baseLayer) => {
         baseLayer.visible = false;
       })
-      //this._view.map.removeAll();
-      this._view.map.add(this.cfLayer)
+      this._view.map.add(this.streetVector);
+      this._view.map.add(this.graphicPointFeature);
+      // this._view.watch("scale", newValue =>
+      // {
+      //   this.graphicPointFeature.renderer = newValue <= 300000 ? this.simpleMarkerSymbol : this.pointHeat;
+      // });
+      this._view.on('click', event => {
+        this._view.hitTest(event).then(response => {
+          if (response.results.length) {
+            console.log("Result: ",response);
+            const graphic = response.results.filter(result => {
+              return result.graphic.layer === this.graphicPointFeature;
+            })[0].graphic;
+            console.log("Name: " + graphic.attributes.place_name);
+          }
+        });
+      });
     }
-    if(this.layerType === 'dPoint'){
+    if(this.layerType === 'dPoint'){ 
       this._view.map.removeAll();
       this._view.map.basemap.baseLayers.forEach((baseLayer) => {
         baseLayer.visible = false;
       })
-      //this._view.map.removeAll();
-      this._view.map.add(this.qtLayer)
+      this._view.map.add(this.streetVector);
+      this._view.map.add(this.fuelStationLayer)
     }
   }
   ngOnDestroy() {
