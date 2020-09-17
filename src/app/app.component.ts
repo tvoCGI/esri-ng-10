@@ -8,9 +8,9 @@ import { Component } from '@angular/core';
 
 export class AppComponent {
   // Set our map properties
-  mapCenter = [-118.225846, 34.652818];
+  mapCenter = [-116.1118, 33.17233];
   basemapType = 'gray-vector';
-  mapZoomLevel = 4;
+  mapZoomLevel = 8;
   public layerRadioBTN = "dPoint";
 
   // See app.component.html
